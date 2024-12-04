@@ -30,7 +30,10 @@ func (bt *BaseTime) WithCustomParser(f func(string, *time.Location) (time.Time, 
 	return bt
 }
 
-var relativeRegex = regexp.MustCompile(`^(now|today|thisMonth|nextMonth|lastMonth)([\+|\-]\d+(ns|us|µs|ms|s|m|h|d))?$`)
+var (
+	relativeRegex = regexp.MustCompile(`^(now|today|thisMonth|nextMonth|lastMonth)([\+|\-]\d+(ns|us|µs|ms|s|m|h|d))?$`)
+	zeroTime      = time.Time{}
+)
 
 func (bt *BaseTime) ParseTime(s string) (t time.Time, err error) {
 	var (
@@ -45,6 +48,8 @@ func (bt *BaseTime) ParseTime(s string) (t time.Time, err error) {
 	if s == "" {
 		err = errors.New("time string cannot be empty")
 		return
+	} else if s == "zero" || s == "0" {
+		t = zeroTime
 	} else if strings.HasPrefix(s, "+") { // Relative time: duration after now
 		if du, err := time.ParseDuration(s[1:]); err != nil {
 			return t, err

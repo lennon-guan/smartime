@@ -15,12 +15,22 @@ func assertParseTimeEqualTo(t *testing.T, bt *smartime.BaseTime, s string, expec
 	}
 }
 
+func assertParseTimeSatisfied(t *testing.T, bt *smartime.BaseTime, s string, check func(time.Time) bool) {
+	if v, err := bt.ParseTime(s); err != nil {
+		t.Errorf("ParseTime(%#v) returns error: %+v", s, err)
+	} else if !check(v) {
+		t.Errorf("ParseTime(%#v) returns %+v, not satisfied", s, v)
+	}
+}
+
 func TestParseTimeAbsolute(t *testing.T) {
 	var (
 		now = time.Now()
 		loc = now.Location()
 		bt  = smartime.NewBaseTime(now)
 	)
+	assertParseTimeSatisfied(t, bt, "0", func(t time.Time) bool { return t.IsZero() })
+	assertParseTimeSatisfied(t, bt, "zero", func(t time.Time) bool { return t.IsZero() })
 	assertParseTimeEqualTo(t, bt, "241204", time.Date(2024, 12, 4, 0, 0, 0, 0, loc))
 	assertParseTimeEqualTo(t, bt, "20241204", time.Date(2024, 12, 4, 0, 0, 0, 0, loc))
 	assertParseTimeEqualTo(t, bt, "2024-12-04", time.Date(2024, 12, 4, 0, 0, 0, 0, loc))
