@@ -1,35 +1,25 @@
 package smartime_test
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
 	"github.com/lennon-guan/smartime"
 )
 
-func assertParseTime(t *testing.T, bt smartime.BaseTime, s string, expected func(time.Time, error) string) {
-	if errMsg := expected(bt.ParseTime(s)); errMsg != "" {
-		t.Error(errMsg)
+func assertParseTimeEqualTo(t *testing.T, bt *smartime.BaseTime, s string, expected time.Time) {
+	if v, err := bt.ParseTime(s); err != nil {
+		t.Errorf("ParseTime(%#v) returns error: %+v", s, err)
+	} else if !v.Equal(expected) {
+		t.Errorf("ParseTime(%#v) returns %+v, not equals to %+v", s, v, expected)
 	}
-}
-
-func assertParseTimeEqualTo(t *testing.T, bt smartime.BaseTime, s string, expected time.Time) {
-	assertParseTime(t, bt, s, func(v time.Time, err error) string {
-		if err != nil {
-			return fmt.Sprintf("ParseTime(%#v) returns error: %+v", s, err)
-		} else if !v.Equal(expected) {
-			return fmt.Sprintf("ParseTime(%#v) returns %+v, not equals to %+v", s, v, expected)
-		}
-		return ""
-	})
 }
 
 func TestParseTimeAbsolute(t *testing.T) {
 	var (
 		now = time.Now()
 		loc = now.Location()
-		bt  = smartime.BaseTime(now)
+		bt  = smartime.NewBaseTime(now)
 	)
 	assertParseTimeEqualTo(t, bt, "241204", time.Date(2024, 12, 4, 0, 0, 0, 0, loc))
 	assertParseTimeEqualTo(t, bt, "20241204", time.Date(2024, 12, 4, 0, 0, 0, 0, loc))
@@ -46,7 +36,7 @@ func TestParseTimeRelative(t *testing.T) {
 	var (
 		loc = time.Local
 		now = time.Date(2024, 12, 4, 11, 22, 33, 0, loc)
-		bt  = smartime.BaseTime(now)
+		bt  = smartime.NewBaseTime(now)
 	)
 	assertParseTimeEqualTo(t, bt, "+1h", now.Add(time.Hour))
 	assertParseTimeEqualTo(t, bt, "-1h", now.Add(-time.Hour))
@@ -64,4 +54,26 @@ func TestParseTimeRelative(t *testing.T) {
 	assertParseTimeEqualTo(t, bt, "thisMonth+30ms", time.Date(2024, 12, 1, 0, 0, 0, 30*1e6, loc))
 	assertParseTimeEqualTo(t, bt, "lastMonth+30us", time.Date(2024, 11, 1, 0, 0, 0, 30*1e3, loc))
 	assertParseTimeEqualTo(t, bt, "nextMonth+30ns", time.Date(2025, 1, 1, 0, 0, 0, 30, loc))
+}
+
+func TestParseTimeCustomParser(t *testing.T) {
+	var (
+		now = time.Now()
+		loc = now.Location()
+		bt  = smartime.NewBaseTime(now).WithCustomParser(func(s string, loc *time.Location) (t time.Time, err error) {
+			if t, err = time.ParseInLocation("2006/01/02", s, loc); err == nil {
+			} else if t, err = time.ParseInLocation("2006/1/2", s, loc); err == nil {
+			} else if t, err = time.ParseInLocation("2006.1.2", s, loc); err == nil {
+			} else if t, err = time.ParseInLocation("2006.01.02", s, loc); err == nil {
+			}
+			return
+		})
+	)
+	assertParseTimeEqualTo(t, bt, "20241204", time.Date(2024, 12, 4, 0, 0, 0, 0, loc))
+	assertParseTimeEqualTo(t, bt, "2024/12/4", time.Date(2024, 12, 4, 0, 0, 0, 0, loc))
+	assertParseTimeEqualTo(t, bt, "2024/12/04", time.Date(2024, 12, 4, 0, 0, 0, 0, loc))
+	assertParseTimeEqualTo(t, bt, "2024/2/4", time.Date(2024, 2, 4, 0, 0, 0, 0, loc))
+	assertParseTimeEqualTo(t, bt, "2024.12.4", time.Date(2024, 12, 4, 0, 0, 0, 0, loc))
+	assertParseTimeEqualTo(t, bt, "2024.12.04", time.Date(2024, 12, 4, 0, 0, 0, 0, loc))
+	assertParseTimeEqualTo(t, bt, "2024.2.4", time.Date(2024, 2, 4, 0, 0, 0, 0, loc))
 }

@@ -9,19 +9,39 @@ import (
 	"time"
 )
 
-type BaseTime time.Time
+type BaseTime struct {
+	t time.Time
+	c func(string, *time.Location) (time.Time, error)
+}
 
-func NowBase() BaseTime {
-	return BaseTime(time.Now())
+func NewBaseTime(t time.Time) *BaseTime {
+	return &BaseTime{t: t}
+}
+func NowBase() *BaseTime {
+	return NewBaseTime(time.Now())
+}
+
+func (bt *BaseTime) Time() time.Time {
+	return bt.t
+}
+
+func (bt *BaseTime) WithCustomParser(f func(string, *time.Location) (time.Time, error)) *BaseTime {
+	bt.c = f
+	return bt
 }
 
 var relativeRegex = regexp.MustCompile(`^(now|today|thisMonth|nextMonth|lastMonth)([\+|\-]\d+(ns|us|µs|ms|s|m|h|d))?$`)
 
-func (bt BaseTime) ParseTime(s string) (t time.Time, err error) {
+func (bt *BaseTime) ParseTime(s string) (t time.Time, err error) {
 	var (
 		ts  int64
-		loc = time.Time(bt).Location()
+		loc = bt.Time().Location()
 	)
+	if bt.c != nil {
+		if t, e := bt.c(s, loc); e == nil {
+			return t, nil
+		}
+	}
 	if s == "" {
 		err = errors.New("time string cannot be empty")
 		return
@@ -29,19 +49,19 @@ func (bt BaseTime) ParseTime(s string) (t time.Time, err error) {
 		if du, err := time.ParseDuration(s[1:]); err != nil {
 			return t, err
 		} else {
-			t = time.Time(bt).Add(du)
+			t = bt.Time().Add(du)
 		}
 	} else if strings.HasPrefix(s, "-") { // Relative time: duration before now
 		if du, err := time.ParseDuration(s[1:]); err != nil {
 			return t, err
 		} else {
-			t = time.Time(bt).Add(-du)
+			t = bt.Time().Add(-du)
 		}
 	} else if s == "now" {
-		t = time.Time(bt)
+		t = bt.Time()
 	} else if f := s[0]; f == 'n' || f == 't' || f == 'l' {
 		if m := relativeRegex.FindStringSubmatch(s); len(m) > 2 {
-			tt := time.Time(bt)
+			tt := bt.Time()
 			switch m[1] {
 			case "now":
 			case "today":
@@ -122,7 +142,7 @@ func (bt BaseTime) ParseTime(s string) (t time.Time, err error) {
 	return
 }
 
-func (bt BaseTime) MustParseTime(s string) time.Time {
+func (bt *BaseTime) MustParseTime(s string) time.Time {
 	if t, err := bt.ParseTime(s); err != nil {
 		panic(err)
 	} else {
