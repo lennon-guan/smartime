@@ -103,6 +103,10 @@ func (bt BaseTime) ParseTime(s string) (t time.Time, err error) {
 			t, err = time.ParseInLocation("20060102150405", s, loc)
 		case 19: // YYYY-mm-dd HH:MM:SS
 			t, err = time.ParseInLocation("2006-01-02 15:04:05", s, loc)
+		case 22: // YYYY-mm-dd HH:MM:SS+XX
+			t, err = time.Parse("2006-01-02 15:04:05-07", s)
+		case 24: // YYYY-mm-dd HH:MM:SS+XXXX
+			t, err = time.Parse("2006-01-02 15:04:05-0700", s)
 		default:
 			// complex relative time format
 			err = fmt.Errorf("unsupported time format: %s", s)

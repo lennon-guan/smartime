@@ -38,11 +38,13 @@ func TestParseTimeAbsolute(t *testing.T) {
 	assertParseTimeEqualTo(t, bt, "1400010056123", time.Unix(1400010056, 123000000))
 	assertParseTimeEqualTo(t, bt, "20241204154931", time.Date(2024, 12, 4, 15, 49, 31, 0, loc))
 	assertParseTimeEqualTo(t, bt, "2024-12-04 15:49:31", time.Date(2024, 12, 4, 15, 49, 31, 0, loc))
+	assertParseTimeEqualTo(t, bt, "2024-12-04 15:49:31-03", time.Date(2024, 12, 4, 18, 49, 31, 0, time.UTC))
+	assertParseTimeEqualTo(t, bt, "2024-12-04 15:49:31+0300", time.Date(2024, 12, 4, 12, 49, 31, 0, time.UTC))
 }
 
 func TestParseTimeRelative(t *testing.T) {
 	var (
-		loc = time.Now().Location()
+		loc = time.Local
 		now = time.Date(2024, 12, 4, 11, 22, 33, 0, loc)
 		bt  = smartime.BaseTime(now)
 	)
