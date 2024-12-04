@@ -15,7 +15,7 @@ func NowBase() BaseTime {
 	return BaseTime(time.Now())
 }
 
-var relativeRegex = regexp.MustCompile(`^(now|today|thisMonth|nextMonth|lastMonth)([\+|\-]\d+(ns|us|µs|ms|s|m|h))?$`)
+var relativeRegex = regexp.MustCompile(`^(now|today|thisMonth|nextMonth|lastMonth)([\+|\-]\d+(ns|us|µs|ms|s|m|h|d))?$`)
 
 func (bt BaseTime) ParseTime(s string) (t time.Time, err error) {
 	var (
@@ -70,9 +70,16 @@ func (bt BaseTime) ParseTime(s string) (t time.Time, err error) {
 			}
 			if offset := m[2]; offset != "" {
 				var du time.Duration
-				if du, err = time.ParseDuration(offset[1:]); err != nil {
+				if m[3] == "d" {
+					var num int
+					if num, err = strconv.Atoi(offset[1 : len(offset)-1]); err != nil {
+						return
+					}
+					du = time.Duration(num*24) * time.Hour
+				} else if du, err = time.ParseDuration(offset[1:]); err != nil {
 					return
-				} else if offset[0] == '+' {
+				}
+				if offset[0] == '+' {
 					tt = tt.Add(du)
 				} else {
 					tt = tt.Add(-du)
