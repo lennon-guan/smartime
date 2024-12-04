@@ -122,6 +122,18 @@ func (bt BaseTime) ParseTime(s string) (t time.Time, err error) {
 	return
 }
 
+func (bt BaseTime) MustParseTime(s string) time.Time {
+	if t, err := bt.ParseTime(s); err != nil {
+		panic(err)
+	} else {
+		return t
+	}
+}
+
 func ParseTime(s string) (time.Time, error) {
 	return NowBase().ParseTime(s)
+}
+
+func MustParseTime(s string) time.Time {
+	return NowBase().MustParseTime(s)
 }
