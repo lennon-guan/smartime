@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"regexp"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -31,7 +30,7 @@ func (bt *BaseTime) WithCustomParser(f func(string, *time.Location) (time.Time, 
 }
 
 var (
-	relativeRegex = regexp.MustCompile(`^(now|today|thisMonth|nextMonth|lastMonth)([\+|\-]\d+(ns|us|µs|ms|s|m|h|d))?$`)
+	relativeRegex = regexp.MustCompile(`^(now|today|thisMonth|nextMonth|lastMonth)?([\+|\-](\d+(ns|us|µs|ms|s|m|h))+)?$`)
 	zeroTime      = time.Time{}
 )
 
@@ -50,24 +49,13 @@ func (bt *BaseTime) ParseTime(s string) (t time.Time, err error) {
 		return
 	} else if s == "zero" || s == "0" {
 		t = zeroTime
-	} else if strings.HasPrefix(s, "+") { // Relative time: duration after now
-		if du, err := time.ParseDuration(s[1:]); err != nil {
-			return t, err
-		} else {
-			t = bt.Time().Add(du)
-		}
-	} else if strings.HasPrefix(s, "-") { // Relative time: duration before now
-		if du, err := time.ParseDuration(s[1:]); err != nil {
-			return t, err
-		} else {
-			t = bt.Time().Add(-du)
-		}
 	} else if s == "now" {
 		t = bt.Time()
-	} else if f := s[0]; f == 'n' || f == 't' || f == 'l' {
+	} else if f := s[0]; f == '-' || f == '+' || f == 'n' || f == 't' || f == 'l' {
 		if m := relativeRegex.FindStringSubmatch(s); len(m) > 2 {
 			tt := bt.Time()
 			switch m[1] {
+			case "":
 			case "now":
 			case "today":
 				tt = time.Date(tt.Year(), tt.Month(), tt.Day(), 0, 0, 0, 0, tt.Location())
@@ -95,13 +83,7 @@ func (bt *BaseTime) ParseTime(s string) (t time.Time, err error) {
 			}
 			if offset := m[2]; offset != "" {
 				var du time.Duration
-				if m[3] == "d" {
-					var num int
-					if num, err = strconv.Atoi(offset[1 : len(offset)-1]); err != nil {
-						return
-					}
-					du = time.Duration(num*24) * time.Hour
-				} else if du, err = time.ParseDuration(offset[1:]); err != nil {
+				if du, err = time.ParseDuration(offset[1:]); err != nil {
 					return
 				}
 				if offset[0] == '+' {
@@ -137,8 +119,14 @@ func (bt *BaseTime) ParseTime(s string) (t time.Time, err error) {
 			t, err = time.ParseInLocation("2006-01-02 15:04:05", s, loc)
 		case 22: // YYYY-mm-dd HH:MM:SS+XX
 			t, err = time.Parse("2006-01-02 15:04:05-07", s)
+		case 23: // YYYY-mm-dd HH:MM:SS.XXX
+			t, err = time.Parse("2006-01-02 15:04:05.000", s)
 		case 24: // YYYY-mm-dd HH:MM:SS+XXXX
 			t, err = time.Parse("2006-01-02 15:04:05-0700", s)
+		case 26: // YYYY-mm-dd HH:MM:SS.XXX+XX
+			t, err = time.Parse("2006-01-02 15:04:05.000-07", s)
+		case 28: // YYYY-mm-dd HH:MM:SS.XXX+XXXX
+			t, err = time.Parse("2006-01-02 15:04:05.000-0700", s)
 		default:
 			// complex relative time format
 			err = fmt.Errorf("unsupported time format: %s", s)
