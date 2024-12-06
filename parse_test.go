@@ -64,6 +64,7 @@ func TestParseTimeRelative(t *testing.T) {
 	assertParseTimeEqualTo(t, bt, "today-2s", time.Date(2024, 12, 3, 23, 59, 58, 0, loc))
 	assertParseTimeEqualTo(t, bt, "thisMonth+30ms", time.Date(2024, 12, 1, 0, 0, 0, 30*1e6, loc))
 	assertParseTimeEqualTo(t, bt, "lastMonth+30us", time.Date(2024, 11, 1, 0, 0, 0, 30*1e3, loc))
+	assertParseTimeEqualTo(t, bt, "lastMonth+30µs", time.Date(2024, 11, 1, 0, 0, 0, 30*1e3, loc))
 	assertParseTimeEqualTo(t, bt, "nextMonth+30ns", time.Date(2025, 1, 1, 0, 0, 0, 30, loc))
 }
 
