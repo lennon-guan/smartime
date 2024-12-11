@@ -49,7 +49,10 @@ Parses a time string `s` based on the `BaseTime` object `bt` and returns a `time
   - "timestamp" (numeric, up to millisecond precision)
   - "YYYYmmddHHMMSS"
   - "YYYY-mm-dd HH:MM:SS"
+  - "YYYY-mm-dd HH:MM:SS"
   - Timezone notations ("YYYY-mm-dd HH:MM:SS+XX", "YYYY-mm-dd HH:MM:SS+XXXX")
+
+You can find more formats and examples in `parse_test.go`
 
 ```go
 func (bt BaseTime) ParseTime(s string) (time.Time, error)
